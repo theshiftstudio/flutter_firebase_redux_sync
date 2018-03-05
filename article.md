@@ -480,5 +480,10 @@ I think this pattern allows us to keep our widgets simple and testable
 and offers an efficient way to hook-up into an external event driven
 system like Cloud Firestore, or Firebase Realtime Database.
 
+This was a long read, I know. Thanks hanging in there!
+
 You can find the entire project on
 [github](https://github.com/theshiftstudio/flutter_firebase_redux_sync).
+
+## Unrelated
+### If want to use Cloud Firestore in your projects please vote for [this](https://github.com/flutter/plugins/pull/343) pull request and the covered issues. I need those timestamps.
