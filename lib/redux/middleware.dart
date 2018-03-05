@@ -20,16 +20,16 @@ Stream<dynamic> incrementEpic(Stream<dynamic> actions, EpicStore<AppState> store
 }
 
 Stream<dynamic> counterEpic(Stream<dynamic> actions, EpicStore<AppState> store) {
-  return new Observable(actions)
-      .ofType(new TypeToken<RequestCounterDataEventsAction>())
-      .flatMapLatest((RequestCounterDataEventsAction requestAction) {
-    return getUserClicks()
-        .map((counter) => new CounterOnDataEventAction(counter))
-        .takeUntil(actions.where((action) => action is CancelCounterDataEventsAction));
+  return new Observable(actions) // 1
+      .ofType(new TypeToken<RequestCounterDataEventsAction>()) // 2
+      .flatMapLatest((RequestCounterDataEventsAction requestAction) { // 3
+    return getUserClicks() // 4
+        .map((counter) => new CounterOnDataEventAction(counter)) // 7
+        .takeUntil(actions.where((action) => action is CancelCounterDataEventsAction)); // 8
   });
 }
 
 Observable<int> getUserClicks() {
-  return new Observable(Firestore.instance.document("users/tudor").snapshots)
-      .map((doc) => doc['counter'] as int);
+  return new Observable(Firestore.instance.document("users/tudor").snapshots) // 5
+      .map((DocumentSnapshot doc) => doc['counter'] as int); // 6
 }

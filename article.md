@@ -1,4 +1,21 @@
-# Flutter, Redux and Firebase Cloud Firestore in sync
+# Flutter, Redux and Firebase Cloud Firestore - in sync
+
+Cloud Firestore is a great persistence option to keep your data in sync
+across mobile and web clients. Redux is a great solution to manage your
+application's state in a way that's easier to reason about.
+
+Things get a bit hairy when you try to integrate an external event
+driven service, like Firestore or Firebase Realtime Database, into the
+synchronous world of redux. You need to figure out:
+- how to maintain the connection between Redux and Firestore
+- where to START listening for data change events
+- where to STOP listening for those events
+
+In this article I'll showcase one way of solving this problem. I'm using
+Flutter as the context, but the ideas I'm presenting could be used in
+other environments as well, like react/react-native.
+
+## Getting started
 
 ### What are we doing today?
 
@@ -7,7 +24,7 @@ and keep the redux store in sync with data from Firestore.
 
 ### How are going to do that?
 
-We'll use [redux.dart](https://pub.dartlang.org/packages/redux),
+Using [redux.dart](https://pub.dartlang.org/packages/redux),
 [flutter_redux](https://pub.dartlang.org/packages/flutter_redux) and
 [redux_epics](https://pub.dartlang.org/packages/redux_epics).
 
@@ -25,29 +42,12 @@ How exactly? Keep reading... :)
   [Rx* concepts / Dart Streams](https://pub.dartlang.org/packages/rxdart)
 
 
-## Getting started
-
-Cloud Firestore is a great persistence option that keeps your data in
-sync across mobile and web clients.
-
-Redux is a great solution to manage your application's state in a way
-that's easier to reason about.
-
-Things get a bit hairy when you try to integrate an external event
-driven service, like Firestore or Firebase Realtime Database, into the
-synchronous world of redux.
-
-You need to figure out:
-- how to maintain the connection between Redux and Firestore
-- where to START listening for data change events
-- where to STOP listening for those events
-
 ## Project setup
 
-We're going to use the default counter app that flutter creates when you
-make a new project.
+We're going to keep it simple and use the default counter app that gets
+created when you make a new project in Flutter.
 
-Make a new project using either Android Studio, Intellij Idea or the
+So make a new project using either Android Studio, Intellij Idea or the
 command line with `flutter create`.
 
 Right now, the app uses a `StatefulWidget` to save the counter. Let's
@@ -55,8 +55,8 @@ switch it to redux!
 
 ## Reduxing our counter
 
-I assume you know how redux works so I won't go to much into details how
-to implement it for our counter app.
+I'll assume you already know how redux works so I won't go too much into
+detail how to implement it for the counter app.
 
 Add redux dependencies to your `pubspec.yaml` file:
 
@@ -74,11 +74,12 @@ Dart port by [Brian Egan](https://twitter.com/brianegan) and
 you can use it for a command line application as well, not only Flutter.
 
 The [flutter_redux](https://pub.dartlang.org/packages/flutter_redux)
-package gives us the glue we need to marry together redux and Flutter.
+package (say thanks to Brian!) gives us the glue we need to marry
+together redux and Flutter.
 
 ### Implement redux, already!
 
-First, we need to define our `AppState` that will be saved in the redux
+First, we need to define the `AppState` that will be saved in the redux
 store.
 
 ```dart
@@ -93,14 +94,14 @@ class AppState {
 }
 ```
 
-We have one action that can change our state: a simple
+We have one action that can change the state: a simple
 `IncrementCounterAction`.
 
 ```dart
 class IncrementCounterAction {}
 ```
 
-Our reducer is pretty straightforward.
+The reducer is pretty straightforward.
 
 ```dart
 AppState appStateReducer(AppState state, dynamic action) {
@@ -118,7 +119,7 @@ int _incrementCounter(int oldCounter, action) {
 }
 ```
 
-Now we can put everything together in `main.dart`.
+We can put everything together in `main.dart`.
 
 ```dart
 void main() => runApp(new MyApp());
@@ -183,14 +184,14 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
-There isn't anything special about our redux implementation:
+The redux implementation is pretty straightforward:
 - the store is just a final field of `MyApp` widget;
 - we use a
   [`StoreProvider`](https://github.com/brianegan/flutter_redux/blob/master/lib/flutter_redux.dart#L12)
-  from the flutter_redux package to expose the store to our widget tree;
-- down in the widget tree, we use a
+  from the flutter_redux package to expose the store to the widget tree;
+- down in the widget tree,
   [`StoreBuilder`](https://github.com/brianegan/flutter_redux/blob/master/lib/flutter_redux.dart#L174)
-  to get the `AppState` and render our counter;
+  gets the `AppState` and renders the counter;
 - when pressed, the **+** action button dispatches an
   `IncrementCounterAction` to the store.
 
@@ -214,8 +215,8 @@ dependencies:
 ### Again, what do we want to accomplish?
 
 - persist our application state to Firestore;
-- each time Firestore emits a data change event we want to update the
-  redux store with the latest value.
+- each time Firestore emits a data change event we want the redux store
+  to get updated with the latest value.
 
 If we do this right, we'll be able to count clicks from multiple devices
 and see changes happening in real time.
@@ -256,7 +257,7 @@ From **flutter_redux**:
   final OnDisposeCallback onDispose;
 ```
 
-Perfect! Now we know when to **start** and **stop** our Firestore
+Perfect! Now we know when to **start** and **stop** the Firestore
 connection.
 
 Let's add the actions and dispatch them.
@@ -318,7 +319,7 @@ An
 [Epic](https://github.com/brianegan/dart_redux_epics/blob/master/lib/src/epic.dart#L54)
 is a function that receives a Stream of actions, handles some of those
 actions and returns a new Stream of actions. <br/> That's it. Actions go
-in, actions go out.
+in, actions come out.
 
 ```dart
 Stream<dynamic> exampleEpic(Stream<dynamic> actions, EpicStore<State> store) {
@@ -448,7 +449,7 @@ counter value by 1 and return a new Observable that will emit
 or `CounterOnErrorEventAction` if something went wrong.
 
 We don't really need `CounterDataPushedAction` for anything, but we
-should fulfill the Epics contract: actions go in, actions go out, not
+should fulfill the Epics contract: actions go in, actions come out, not
 nulls. :)
 
 I'll leave it up to you to handle the error action (maybe display a
@@ -474,16 +475,32 @@ final store = new Store<AppState>(
 Both `EpicMiddleware` and `combineEpics` are provided by
 **redux_epics**.
 
-## Conclusion
+## Wrap-up
 
-I think this pattern allows us to keep our widgets simple and testable
-and offers an efficient way to hook-up into an external event driven
-system like Cloud Firestore, or Firebase Realtime Database.
+This pattern allows us to keep the widgets simple and testable and
+offers an efficient way to hook-up into an external event driven system
+like Cloud Firestore, or Firebase Realtime Database.
 
-This was a long read, I know. Thanks hanging in there!
+This was a long read, I know. Thanks for hanging in there!
 
 You can find the entire project on
 [github](https://github.com/theshiftstudio/flutter_firebase_redux_sync).
+Also, please give some love to the awesome packages we used in this
+article.
 
-## Unrelated
-### If want to use Cloud Firestore in your projects please vote for [this](https://github.com/flutter/plugins/pull/343) pull request and the covered issues. I need those timestamps.
+Note: If want to use Cloud Firestore in your projects please vote for
+[this](https://github.com/flutter/plugins/pull/343) pull request and the
+covered issues. I need those timestamps.
+
+## About Shift STUDIO
+
+[Shift STUDIO](https://shiftstudio.com/) is a development studio that
+works with great companies to create amazing apps. We have been building
+native apps for Android and iOS ever since mobile became a thing... but
+Flutter got as all wet and excited like never before!
+
+
+If you wanna see more articles like this, follow us on twitter
+[@shiftstudiodevs](https://twitter.com/shiftstudiodevs) .
+
+[Contact us](mailto:hello@shiftstudio.com) about your digital project.
