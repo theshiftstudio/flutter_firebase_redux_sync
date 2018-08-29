@@ -14,8 +14,8 @@ AppState appStateReducer(AppState state, dynamic action) {
   );
 }
 
-final counterReducer = combineTypedReducers<int>([
-  new ReducerBinding<int, CounterOnDataEventAction>(_setCounter),
+final counterReducer = combineReducers<int>([
+  new TypedReducer<int, CounterOnDataEventAction>(_setCounter),
 ]);
 
 int _setCounter(int oldCounter, CounterOnDataEventAction action) {
